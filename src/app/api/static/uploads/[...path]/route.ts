@@ -5,10 +5,11 @@ import { existsSync } from 'fs'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const filePath = params.path.join('/')
+    const { path } = await context.params
+    const filePath = path.join('/')
     const fullPath = join(process.cwd(), 'public', 'uploads', filePath)
     
     // 安全检查：确保文件路径在uploads目录内

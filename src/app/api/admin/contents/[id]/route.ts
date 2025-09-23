@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证管理员权限
@@ -17,7 +17,7 @@ export async function DELETE(
       )
     }
 
-    const { id } = params
+    const { id } = await context.params
     const body = await request.json()
     const { type } = body
 
