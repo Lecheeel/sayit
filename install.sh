@@ -400,9 +400,17 @@ deploy_application() {
     print_info "创建应用目录..."
     mkdir -p $APP_DIR
     
-    # 复制当前目录的代码到目标目录
-    print_info "复制应用代码..."
-    cp -r $(pwd)/* $APP_DIR/
+    # 检查是否在同一目录
+    local current_dir=$(pwd)
+    local target_dir=$(realpath $APP_DIR)
+    
+    if [[ "$current_dir" == "$target_dir" ]]; then
+        print_info "当前目录即为目标目录，跳过代码复制..."
+    else
+        # 复制当前目录的代码到目标目录
+        print_info "复制应用代码..."
+        cp -r $(pwd)/* $APP_DIR/
+    fi
     
     # 设置权限
     chmod -R 755 $APP_DIR
