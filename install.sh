@@ -354,6 +354,28 @@ install_nodejs() {
     print_success "Node.js 安装完成"
 }
 
+# 启用 Corepack 和安装 pnpm
+install_pnpm() {
+    print_header "安装 pnpm"
+    
+    # 检查是否已安装 pnpm
+    if command -v pnpm &> /dev/null; then
+        print_success "pnpm 已安装 (版本: $(pnpm --version))"
+        return
+    fi
+    
+    print_info "启用 Corepack..."
+    sudo corepack enable
+    
+    print_info "安装最新版本的 pnpm..."
+    corepack prepare pnpm@latest --activate
+    
+    # 验证安装
+    print_info "pnpm 版本: $(pnpm --version)"
+    
+    print_success "pnpm 安装完成"
+}
+
 # 安装 PM2
 install_pm2() {
     print_header "安装 PM2"
@@ -363,8 +385,8 @@ install_pm2() {
         return
     fi
     
-    print_info "全局安装 PM2..."
-    sudo npm install -g pm2
+    print_info "使用 pnpm 全局安装 PM2..."
+    pnpm add -g pm2
     
     print_success "PM2 安装完成"
 }
@@ -424,21 +446,18 @@ install_dependencies() {
     
     cd $APP_DIR
     
-    print_info "安装 npm 依赖..."
-    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
-    if [[ -f "package-lock.json" ]]; then
-        if ! npm ci --omit=dev; then
-            print_warning "package-lock.json 与 package.json 不同步，正在更新..."
-            rm -f package-lock.json
-            npm install --only=production
-        fi
+    print_info "安装 pnpm 依赖..."
+    # 检查是否存在 pnpm-lock.yaml，如果存在则使用 --frozen-lockfile，否则正常安装
+    if [[ -f "pnpm-lock.yaml" ]]; then
+        print_info "使用 pnpm frozen-lockfile 安装生产依赖..."
+        pnpm install --prod --frozen-lockfile
     else
-        print_info "未找到 package-lock.json，使用 npm install..."
-        npm install --only=production
+        print_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
+        pnpm install --prod
     fi
     
     print_info "构建应用..."
-    npm run build
+    pnpm run build
     
     print_success "应用依赖安装完成"
 }
@@ -515,13 +534,13 @@ setup_database() {
     cd $APP_DIR
     
     print_info "初始化数据库架构..."
-    npm run db:push
+    pnpm run db:push
     
     print_info "生成 Prisma Client..."
-    npm run db:generate
+    pnpm run db:generate
     
     print_info "创建初始数据..."
-    npm run db:init
+    pnpm run db:init
     
     # 设置数据库文件权限
     chmod 664 $APP_DIR/prisma/production.db
@@ -724,7 +743,7 @@ setup_pm2() {
 module.exports = {
   apps: [{
     name: '$APP_NAME',
-    script: 'npm',
+    script: 'pnpm',
     args: 'start',
     cwd: '$APP_DIR',
     instances: 'max',
@@ -805,13 +824,13 @@ git pull origin main || {
 }
 
 # 安装依赖
-npm ci --only=production
+pnpm install --prod --frozen-lockfile
 
 # 构建应用
-npm run build
+pnpm run build
 
 # 更新数据库
-npm run db:push
+pnpm run db:push
 
 # 重启服务
 pm2 restart sayit
@@ -917,7 +936,7 @@ check_deploy_environment() {
     fi
     
     # 检查必要工具
-    for cmd in git node npm pm2; do
+    for cmd in git node pnpm pm2; do
         if ! command -v $cmd &> /dev/null; then
             log_error "$cmd 未安装"
             exit 1
@@ -1039,16 +1058,16 @@ deploy_install_dependencies() {
     rm -rf node_modules 2>/dev/null || true
     
     log_info "安装生产依赖..."
-    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
-    if [[ -f "package-lock.json" ]]; then
-        if ! npm ci --omit=dev; then
-            log_warning "package-lock.json 与 package.json 不同步，正在更新..."
-            rm -f package-lock.json
-            npm install --only=production
+    # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
+    if [[ -f "pnpm-lock.yaml" ]]; then
+        if ! pnpm install --prod --frozen-lockfile; then
+            log_warning "pnpm-lock.yaml 与 package.json 不同步，正在更新..."
+            rm -f pnpm-lock.yaml
+            pnpm install --prod
         fi
     else
-        log_info "未找到 package-lock.json，使用 npm install..."
-        npm install --only=production
+        log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
+        pnpm install --prod
     fi
     
     log_success "依赖安装完成"
@@ -1064,7 +1083,7 @@ deploy_build_application() {
     rm -rf .next 2>/dev/null || true
     
     log_info "构建应用..."
-    npm run build
+    pnpm run build
     
     log_success "应用构建完成"
 }
@@ -1088,10 +1107,10 @@ migrate_database() {
     fi
     
     log_info "执行数据库迁移..."
-    npm run db:push
+    pnpm run db:push
     
     log_info "生成 Prisma Client..."
-    npm run db:generate
+    pnpm run db:generate
     
     log_success "数据库迁移完成"
 }
@@ -1288,23 +1307,23 @@ quick_update() {
     }
     
     log_info "安装依赖..."
-    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
-    if [[ -f "package-lock.json" ]]; then
-        if ! npm ci --omit=dev; then
-            log_warning "package-lock.json 与 package.json 不同步，正在更新..."
-            rm -f package-lock.json
-            npm install --only=production
+    # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
+    if [[ -f "pnpm-lock.yaml" ]]; then
+        if ! pnpm install --prod --frozen-lockfile; then
+            log_warning "pnpm-lock.yaml 与 package.json 不同步，正在更新..."
+            rm -f pnpm-lock.yaml
+            pnpm install --prod
         fi
     else
-        log_info "未找到 package-lock.json，使用 npm install..."
-        npm install --only=production
+        log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
+        pnpm install --prod
     fi
     
     log_info "构建应用..."
-    npm run build
+    pnpm run build
     
     log_info "更新数据库..."
-    npm run db:push
+    pnpm run db:push
     
     log_info "重启服务..."
     pm2 restart $APP_NAME
@@ -1340,7 +1359,7 @@ install_main() {
     # 显示欢迎信息
     clear
     print_header "🚀 SayIt 校园社交平台自动安装脚本"
-    echo -e "${CYAN}本脚本将自动安装和配置 SayIt 校园社交平台${NC}"
+    echo -e "${CYAN}本脚本将自动安装和配置 SayIt 校园社交平台 (使用 pnpm 高速包管理)${NC}"
     echo -e "${YELLOW}支持系统: Ubuntu 18.04+ / Debian 10+${NC}"
     echo ""
     
@@ -1353,6 +1372,7 @@ install_main() {
     # 执行安装步骤
     update_system
     install_nodejs
+    install_pnpm
     install_pm2
     check_app_user
     deploy_application
