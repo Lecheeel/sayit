@@ -425,10 +425,15 @@ install_dependencies() {
     cd $APP_DIR
     
     print_info "安装 npm 依赖..."
-    # 尝试使用 npm ci，如果失败则更新 lock 文件
-    if ! npm ci --omit=dev; then
-        print_warning "package-lock.json 与 package.json 不同步，正在更新..."
-        rm -f package-lock.json
+    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
+    if [[ -f "package-lock.json" ]]; then
+        if ! npm ci --omit=dev; then
+            print_warning "package-lock.json 与 package.json 不同步，正在更新..."
+            rm -f package-lock.json
+            npm install --only=production
+        fi
+    else
+        print_info "未找到 package-lock.json，使用 npm install..."
         npm install --only=production
     fi
     
@@ -1034,10 +1039,15 @@ deploy_install_dependencies() {
     rm -rf node_modules 2>/dev/null || true
     
     log_info "安装生产依赖..."
-    # 尝试使用 npm ci，如果失败则更新 lock 文件
-    if ! npm ci --omit=dev; then
-        log_warning "package-lock.json 与 package.json 不同步，正在更新..."
-        rm -f package-lock.json
+    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
+    if [[ -f "package-lock.json" ]]; then
+        if ! npm ci --omit=dev; then
+            log_warning "package-lock.json 与 package.json 不同步，正在更新..."
+            rm -f package-lock.json
+            npm install --only=production
+        fi
+    else
+        log_info "未找到 package-lock.json，使用 npm install..."
         npm install --only=production
     fi
     
@@ -1278,10 +1288,15 @@ quick_update() {
     }
     
     log_info "安装依赖..."
-    # 尝试使用 npm ci，如果失败则更新 lock 文件
-    if ! npm ci --omit=dev; then
-        log_warning "package-lock.json 与 package.json 不同步，正在更新..."
-        rm -f package-lock.json
+    # 检查是否存在 package-lock.json，如果存在则使用 npm ci，否则使用 npm install
+    if [[ -f "package-lock.json" ]]; then
+        if ! npm ci --omit=dev; then
+            log_warning "package-lock.json 与 package.json 不同步，正在更新..."
+            rm -f package-lock.json
+            npm install --only=production
+        fi
+    else
+        log_info "未找到 package-lock.json，使用 npm install..."
         npm install --only=production
     fi
     
