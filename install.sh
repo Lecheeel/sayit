@@ -449,15 +449,22 @@ install_dependencies() {
     print_info "安装 pnpm 依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 --frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
-        print_info "使用 pnpm frozen-lockfile 安装生产依赖..."
-        pnpm install --prod --frozen-lockfile
+        print_info "使用 pnpm frozen-lockfile 安装所有依赖..."
+        pnpm install --frozen-lockfile
     else
         print_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
-        pnpm install --prod
+        pnpm install
     fi
+    
+    print_info "批准构建脚本执行..."
+    pnpm approve-builds
     
     print_info "构建应用..."
     pnpm run build
+    
+    # 构建完成后移除开发依赖以节省空间（可选）
+    print_info "移除开发依赖以节省空间..."
+    pnpm prune --prod
     
     print_success "应用依赖安装完成"
 }
@@ -1057,18 +1064,21 @@ deploy_install_dependencies() {
     log_info "清理 node_modules..."
     rm -rf node_modules 2>/dev/null || true
     
-    log_info "安装生产依赖..."
+    log_info "安装所有依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
-        if ! pnpm install --prod --frozen-lockfile; then
+        if ! pnpm install --frozen-lockfile; then
             log_warning "pnpm-lock.yaml 与 package.json 不同步，正在更新..."
             rm -f pnpm-lock.yaml
-            pnpm install --prod
+            pnpm install
         fi
     else
         log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
-        pnpm install --prod
+        pnpm install
     fi
+    
+    log_info "批准构建脚本执行..."
+    pnpm approve-builds
     
     log_success "依赖安装完成"
 }
@@ -1084,6 +1094,10 @@ deploy_build_application() {
     
     log_info "构建应用..."
     pnpm run build
+    
+    # 构建完成后移除开发依赖以节省空间
+    log_info "移除开发依赖以节省空间..."
+    pnpm prune --prod
     
     log_success "应用构建完成"
 }
@@ -1309,18 +1323,25 @@ quick_update() {
     log_info "安装依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
-        if ! pnpm install --prod --frozen-lockfile; then
+        if ! pnpm install --frozen-lockfile; then
             log_warning "pnpm-lock.yaml 与 package.json 不同步，正在更新..."
             rm -f pnpm-lock.yaml
-            pnpm install --prod
+            pnpm install
         fi
     else
         log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
-        pnpm install --prod
+        pnpm install
     fi
+    
+    log_info "批准构建脚本执行..."
+    pnpm approve-builds
     
     log_info "构建应用..."
     pnpm run build
+    
+    # 构建完成后移除开发依赖以节省空间
+    log_info "移除开发依赖以节省空间..."
+    pnpm prune --prod
     
     log_info "更新数据库..."
     pnpm run db:push
