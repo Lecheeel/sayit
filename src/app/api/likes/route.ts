@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateRequest } from '@/lib/auth'
 
+// Types for like operations
+interface LikeCondition {
+  userId: string
+  postId?: string
+  confessionId?: string
+  commentId?: string
+  marketItemId?: string
+  taskId?: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { isAuthenticated, user } = authenticateRequest(request)
@@ -22,12 +32,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: LikeCondition = {
       userId: user.userId
     }
 
     // 构建创建条件
-    const createData: any = {
+    const createData: LikeCondition = {
       userId: user.userId
     }
 
@@ -119,7 +129,7 @@ export async function GET(request: NextRequest) {
     
     if (isAuth && authUser) {
       // 构建查询条件
-      const whereCondition: any = {
+      const whereCondition: LikeCondition = {
         userId: authUser.userId
       }
 
@@ -154,7 +164,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取总点赞数
-    const countCondition: any = {}
+    const countCondition: Partial<LikeCondition> = {}
     switch (targetType) {
       case 'post':
         countCondition.postId = targetId

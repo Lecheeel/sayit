@@ -51,7 +51,7 @@ export async function GET(
         stats: {
           likes: post._count.likes,
           comments: post._count.comments,
-          views: (post as any).viewCount || 0
+          views: post.viewCount || 0
         }
       }
     })

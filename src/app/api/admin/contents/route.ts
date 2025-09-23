@@ -20,7 +20,23 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = (page - 1) * limit
 
-    let contents: any[] = []
+    interface ContentItem {
+      id: string
+      type: 'confession' | 'post' | 'market' | 'task'
+      title?: string
+      content: string
+      author: {
+        id: string
+        username: string
+        nickname: string | null
+      }
+      createdAt: string
+      viewCount: number
+      likesCount: number
+      commentsCount: number
+    }
+
+    let contents: ContentItem[] = []
 
     // 根据类型获取不同的内容
     if (type === 'all' || type === 'confession') {

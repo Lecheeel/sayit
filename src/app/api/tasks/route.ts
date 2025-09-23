@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Types for task query conditions
+interface TaskWhereCondition {
+  deletedAt: null
+  status: 'OPEN'
+  category?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url)
@@ -10,7 +17,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: TaskWhereCondition = {
       deletedAt: null,
       status: 'OPEN' // 只显示进行中的任务
     }

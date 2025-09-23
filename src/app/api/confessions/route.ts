@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     })
 
     // 解析图片 JSON 字符串
-    const formattedConfessions = confessions.map((confession: any) => ({
+    const formattedConfessions = confessions.map((confession) => ({
       ...confession,
       images: JSON.parse(confession.images)
     }))

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Types for post query conditions
+interface PostWhereCondition {
+  deletedAt: null
+  category?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url)
@@ -10,7 +16,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: PostWhereCondition = {
       deletedAt: null
     }
 
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest) {
     })
 
     // 解析 JSON 字段
-    const formattedPosts = posts.map((post: any) => ({
+    const formattedPosts = posts.map((post) => ({
       ...post,
       images: JSON.parse(post.images),
       tags: JSON.parse(post.tags)

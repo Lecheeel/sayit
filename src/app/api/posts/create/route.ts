@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证图片URL
-    const validImages = images.filter((img: any) => {
+    const validImages = images.filter((img: string) => {
       if (typeof img !== 'string') return false
       // 允许相对路径（如 /uploads/xxx.jpg）和完整URL
       if (img.startsWith('/uploads/')) return true
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validTags = tags.filter((tag: any) => {
+    const validTags = tags.filter((tag: string) => {
       if (typeof tag !== 'string') return false
       const cleanTag = tag.trim()
       return cleanTag.length > 0 && cleanTag.length <= 20

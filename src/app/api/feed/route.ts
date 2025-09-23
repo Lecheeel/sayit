@@ -2,6 +2,69 @@ import { NextRequest, NextResponse } from 'next/server'
 import { fetchFeedDataParallel } from '@/lib/parallel-data-fetcher'
 import { authenticateRequest } from '@/lib/auth'
 
+// Types for feed data structure
+interface FeedAuthor {
+  id: string
+  username: string
+  nickname?: string | null
+  avatar?: string | null
+}
+
+interface FeedStats {
+  likes: number
+  comments: number
+  views: number
+  isLiked: boolean
+}
+
+interface ConfessionFeedItem {
+  id: string
+  content: string
+  images: string[]
+  isAnonymous: boolean
+  author: FeedAuthor
+  createdAt: Date
+  stats: FeedStats
+}
+
+interface PostFeedItem {
+  id: string
+  title: string
+  content: string
+  images: string[]
+  category?: string | null
+  tags: string[]
+  author: FeedAuthor
+  createdAt: Date
+  stats: FeedStats
+}
+
+interface MarketItemFeedItem {
+  id: string
+  title: string
+  description: string
+  images: string[]
+  price: number
+  category: string
+  condition: string
+  location?: string | null
+  seller: FeedAuthor
+  createdAt: Date
+  stats: FeedStats
+}
+
+interface TaskFeedItem {
+  id: string
+  title: string
+  description: string
+  reward: number
+  category: string
+  deadline?: Date | null
+  publisher: FeedAuthor
+  createdAt: Date
+  stats: FeedStats
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url)
@@ -23,7 +86,7 @@ export async function GET(request: NextRequest) {
     // 统一格式化所有内容项
     const feedItems = [
       // 格式化表白墙内容
-      ...feedData.confessions.map((item: any) => ({
+      ...feedData.confessions.map((item: ConfessionFeedItem) => ({
         id: item.id,
         type: 'confession' as const,
         title: '匿名表白',
@@ -41,7 +104,7 @@ export async function GET(request: NextRequest) {
       })),
 
       // 格式化校园圈帖子
-      ...feedData.posts.map((item: any) => ({
+      ...feedData.posts.map((item: PostFeedItem) => ({
         id: item.id,
         type: 'post' as const,
         title: item.title,
@@ -55,7 +118,7 @@ export async function GET(request: NextRequest) {
       })),
 
       // 格式化跳蚤市场商品
-      ...feedData.marketItems.map((item: any) => ({
+      ...feedData.marketItems.map((item: MarketItemFeedItem) => ({
         id: item.id,
         type: 'market' as const,
         title: item.title,
@@ -71,7 +134,7 @@ export async function GET(request: NextRequest) {
       })),
 
       // 格式化悬赏任务
-      ...feedData.tasks.map((item: any) => ({
+      ...feedData.tasks.map((item: TaskFeedItem) => ({
         id: item.id,
         type: 'task' as const,
         title: item.title,

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Types for market query conditions
+interface MarketWhereCondition {
+  deletedAt: null
+  status: 'AVAILABLE'
+  category?: string
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url)
@@ -10,7 +17,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: MarketWhereCondition = {
       deletedAt: null,
       status: 'AVAILABLE' // 只显示可购买的商品
     }
@@ -40,7 +47,7 @@ export async function GET(request: NextRequest) {
     })
 
     // 解析 JSON 字段
-    const formattedItems = items.map((item: any) => ({
+    const formattedItems = items.map((item) => ({
       ...item,
       images: JSON.parse(item.images)
     }))

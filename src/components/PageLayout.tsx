@@ -39,8 +39,9 @@ interface UsePageDataResult {
   loading: boolean
   hasMore?: boolean
   page?: number
-  fetchData: (reset?: boolean) => Promise<void>
+  fetchData: (currentPage?: number, append?: boolean) => Promise<void>
   loadMore?: () => void
+  resetData?: () => void
 }
 
 interface PageLayoutProps {
@@ -63,11 +64,14 @@ export default function PageLayout({
   const { toast, showToast, hideToast } = useToast()
 
   // 使用传入的数据钩子
-  const { items, loading, hasMore, page, fetchData, loadMore } = usePageData()
+  const { items, loading, hasMore, page, fetchData, loadMore, resetData } = usePageData()
 
   // 当分类改变时重新获取数据
   useEffect(() => {
-    fetchData(true)
+    if (resetData) {
+      resetData()
+    }
+    fetchData(1, false)
   }, [selectedCategory])
 
   const handleCreateClick = () => {
@@ -82,7 +86,10 @@ export default function PageLayout({
   }
 
   const handleCreateSuccess = () => {
-    fetchData(true) // 刷新列表
+    if (resetData) {
+      resetData()
+    }
+    fetchData(1, false) // 刷新列表
   }
 
   const feedItems = convertToFeedItems(items)

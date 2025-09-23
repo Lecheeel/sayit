@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证图片URL
-    const validImages = images.filter((img: any) => {
+    const validImages = images.filter((img: string) => {
       if (typeof img !== 'string') return false
       // 允许相对路径（如 /uploads/xxx.jpg）和完整URL
       if (img.startsWith('/uploads/')) return true

@@ -150,7 +150,12 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: {
+      deletedAt: null
+      parentId: null
+      confessionId?: string
+      postId?: string
+    } = {
       deletedAt: null,
       parentId: null // 只获取顶级评论
     }
@@ -162,7 +167,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建排序条件
-    let orderBy: any = { createdAt: 'desc' }
+    let orderBy: { createdAt?: 'desc', likes?: { _count: 'desc' } } | Array<{ createdAt?: 'desc', likes?: { _count: 'desc' } }> = { createdAt: 'desc' }
     if (sortBy === 'likes') {
       orderBy = [
         { likes: { _count: 'desc' } },
@@ -223,13 +228,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      comments: comments.map((comment: any) => ({
+      comments: comments.map((comment) => ({
         id: comment.id,
         content: comment.content,
         images: JSON.parse(comment.images || '[]'),
         createdAt: comment.createdAt,
         author: comment.author,
-        replies: comment.replies.map((reply: any) => ({
+        replies: comment.replies.map((reply) => ({
           id: reply.id,
           content: reply.content,
           images: JSON.parse(reply.images || '[]'),

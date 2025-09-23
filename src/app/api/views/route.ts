@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateRequest } from '@/lib/auth'
 
+// Types for view record operations
+type TargetType = 'post' | 'confession' | 'market' | 'task'
+
+interface ViewWhereCondition {
+  createdAt: {
+    gte: Date
+  }
+  postId?: string
+  confessionId?: string
+  marketItemId?: string
+  taskId?: string
+  userId?: string | null
+  ip?: string
+}
+
+interface ViewCreateData {
+  userId: string | null
+  ip: string
+  userAgent: string
+  postId?: string
+  confessionId?: string
+  marketItemId?: string
+  taskId?: string
+}
+
 // 记录浏览量
 export async function POST(request: NextRequest) {
   try {
@@ -43,7 +68,7 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || ''
 
     // 构建查询条件
-    const whereCondition: any = {
+    const whereCondition: ViewWhereCondition = {
       createdAt: {
         gte: new Date(Date.now() - 5 * 60 * 1000) // 5分钟内不重复计数
       }
@@ -74,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 检查是否已经记录过浏览（防刷机制）
-    const existingView = await (prisma as any).viewRecord.findFirst({
+    const existingView = await prisma.viewRecord.findFirst({
       where: whereCondition
     })
 
@@ -87,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 构建创建数据
-    const createData: any = {
+    const createData: ViewCreateData = {
       userId: user?.userId || null,
       ip,
       userAgent
@@ -113,7 +138,7 @@ export async function POST(request: NextRequest) {
     try {
       await prisma.$transaction(async (tx) => {
         // 创建浏览记录
-        await (tx as any).viewRecord.create({
+        await tx.viewRecord.create({
           data: createData
         })
 
@@ -126,11 +151,11 @@ export async function POST(request: NextRequest) {
                 viewCount: {
                   increment: 1
                 }
-              } as any
+              }
             })
             break
           case 'confession':
-            await (tx as any).confession.update({
+            await tx.confession.update({
               where: { id: targetId },
               data: {
                 viewCount: {
@@ -140,7 +165,7 @@ export async function POST(request: NextRequest) {
             })
             break
           case 'market':
-            await (tx as any).marketItem.update({
+            await tx.marketItem.update({
               where: { id: targetId },
               data: {
                 viewCount: {
@@ -150,7 +175,7 @@ export async function POST(request: NextRequest) {
             })
             break
           case 'task':
-            await (tx as any).task.update({
+            await tx.task.update({
               where: { id: targetId },
               data: {
                 viewCount: {
@@ -167,9 +192,9 @@ export async function POST(request: NextRequest) {
         message: '浏览量已更新',
         viewIncremented: true
       })
-    } catch (transactionError: any) {
+    } catch (transactionError: unknown) {
       // 如果是重复记录错误，说明已经记录过了，返回成功但不增加浏览量
-      if (transactionError.code === 'P2002') {
+      if (transactionError && typeof transactionError === 'object' && 'code' in transactionError && (transactionError as { code: string }).code === 'P2002') {
         return NextResponse.json({
           success: true,
           message: '浏览量已记录（重复访问）',
@@ -224,30 +249,30 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    let content: any = null
+    let content: { viewCount: number } | null = null
 
     // 根据类型获取对应内容
     switch (targetType) {
       case 'post':
         content = await prisma.post.findUnique({
           where: { id: targetId },
-          select: { viewCount: true } as any
+          select: { viewCount: true }
         })
         break
       case 'confession':
-        content = await (prisma as any).confession.findUnique({
+        content = await prisma.confession.findUnique({
           where: { id: targetId },
           select: { viewCount: true }
         })
         break
       case 'market':
-        content = await (prisma as any).marketItem.findUnique({
+        content = await prisma.marketItem.findUnique({
           where: { id: targetId },
           select: { viewCount: true }
         })
         break
       case 'task':
-        content = await (prisma as any).task.findUnique({
+        content = await prisma.task.findUnique({
           where: { id: targetId },
           select: { viewCount: true }
         })

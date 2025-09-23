@@ -443,29 +443,31 @@ deploy_application() {
 # 安装应用依赖
 install_dependencies() {
     print_header "安装应用依赖"
-    
+
     cd $APP_DIR
-    
+
+    print_info "检查并安装缺失的 ESLint 插件..."
+    # 检查是否需要安装 @next/eslint-plugin-next
+    if ! pnpm list @next/eslint-plugin-next &>/dev/null; then
+        print_info "安装 @next/eslint-plugin-next..."
+        pnpm add @next/eslint-plugin-next
+    fi
+
     print_info "安装 pnpm 依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 --frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
         print_info "使用 pnpm frozen-lockfile 安装所有依赖..."
-        pnpm install --frozen-lockfile
+        if ! pnpm install --frozen-lockfile; then
+            print_warning "pnpm-lock.yaml 与 package.json 不同步，重新安装..."
+            rm -f pnpm-lock.yaml
+            pnpm install
+        fi
     else
         print_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
         pnpm install
     fi
-    
-    print_info "批准构建脚本执行..."
-    pnpm approve-builds
-    
-    print_info "构建应用..."
-    pnpm run build
-    
-    # 构建完成后移除开发依赖以节省空间（可选）
-    print_info "移除开发依赖以节省空间..."
-    pnpm prune --prod
-    
+
+    # 跳过构建，留到数据库初始化后进行
     print_success "应用依赖安装完成"
 }
 
@@ -537,22 +539,54 @@ EOF
 # 初始化数据库
 setup_database() {
     print_header "初始化数据库"
-    
+
     cd $APP_DIR
-    
+
+    print_info "检查数据库文件..."
+    local db_file="$APP_DIR/prisma/production.db"
+    local db_dir=$(dirname "$db_file")
+
+    # 确保数据库目录存在
+    mkdir -p "$db_dir"
+
     print_info "初始化数据库架构..."
     pnpm run db:push
-    
+
     print_info "生成 Prisma Client..."
     pnpm run db:generate
-    
-    print_info "创建初始数据..."
+
+    print_info "创建初始数据和管理员账户..."
     pnpm run db:init
-    
+
     # 设置数据库文件权限
-    chmod 664 $APP_DIR/prisma/production.db
-    
+    if [[ -f "$db_file" ]]; then
+        chmod 664 "$db_file"
+        print_success "数据库权限设置完成"
+    fi
+
     print_success "数据库初始化完成"
+}
+
+# 构建应用
+build_application() {
+    print_header "构建应用"
+
+    cd $APP_DIR
+
+    print_info "清理构建缓存..."
+    rm -rf .next 2>/dev/null || true
+
+    print_info "构建应用..."
+    if ! pnpm run build; then
+        print_error "应用构建失败"
+        exit 1
+    fi
+
+    # 构建完成后移除开发依赖以节省空间（可选）
+    print_info "移除开发依赖以节省空间..."
+    pnpm prune --prod
+
+    print_success "应用构建完成"
 }
 
 # 安装 Nginx
@@ -1058,12 +1092,19 @@ pull_latest_code() {
 # 部署安装依赖
 deploy_install_dependencies() {
     log_header "安装依赖"
-    
+
     cd "$APP_DIR"
-    
+
+    log_info "检查并安装缺失的 ESLint 插件..."
+    # 检查是否需要安装 @next/eslint-plugin-next
+    if ! pnpm list @next/eslint-plugin-next &>/dev/null; then
+        log_info "安装 @next/eslint-plugin-next..."
+        pnpm add @next/eslint-plugin-next
+    fi
+
     log_info "清理 node_modules..."
     rm -rf node_modules 2>/dev/null || true
-    
+
     log_info "安装所有依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
@@ -1076,10 +1117,7 @@ deploy_install_dependencies() {
         log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
         pnpm install
     fi
-    
-    log_info "批准构建脚本执行..."
-    pnpm approve-builds
-    
+
     log_success "依赖安装完成"
 }
 
@@ -1311,15 +1349,22 @@ EOF
 # 快速更新代码
 quick_update() {
     log_header "快速更新代码"
-    
+
     cd "$APP_DIR"
-    
+
     log_info "拉取最新代码..."
     git pull origin $BRANCH || {
         log_error "Git pull 失败"
         exit 1
     }
-    
+
+    log_info "检查并安装缺失的 ESLint 插件..."
+    # 检查是否需要安装 @next/eslint-plugin-next
+    if ! pnpm list @next/eslint-plugin-next &>/dev/null; then
+        log_info "安装 @next/eslint-plugin-next..."
+        pnpm add @next/eslint-plugin-next
+    fi
+
     log_info "安装依赖..."
     # 检查是否存在 pnpm-lock.yaml，如果存在则使用 frozen-lockfile，否则正常安装
     if [[ -f "pnpm-lock.yaml" ]]; then
@@ -1332,23 +1377,20 @@ quick_update() {
         log_info "未找到 pnpm-lock.yaml，使用 pnpm install..."
         pnpm install
     fi
-    
-    log_info "批准构建脚本执行..."
-    pnpm approve-builds
-    
+
     log_info "构建应用..."
     pnpm run build
-    
+
     # 构建完成后移除开发依赖以节省空间
     log_info "移除开发依赖以节省空间..."
     pnpm prune --prod
-    
+
     log_info "更新数据库..."
     pnpm run db:push
-    
+
     log_info "重启服务..."
     pm2 restart $APP_NAME
-    
+
     log_success "快速更新完成"
 }
 
@@ -1400,6 +1442,7 @@ install_main() {
     install_dependencies
     setup_environment
     setup_database
+    build_application
     install_nginx
     configure_nginx
     setup_ssl
