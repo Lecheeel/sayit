@@ -18,8 +18,8 @@ NC='\033[0m' # No Color
 
 # 默认配置
 APP_NAME="sayit"
-APP_USER="sayit"
-APP_DIR="/home/$APP_USER/$APP_NAME"
+APP_USER="$(whoami)"
+APP_DIR="$HOME/$APP_NAME"
 REPO_URL="https://github.com/your-username/sayit.git"
 BRANCH="main"
 DOMAIN=""
@@ -111,7 +111,12 @@ parse_arguments() {
                 ;;
             --user)
                 APP_USER="$2"
-                APP_DIR="/home/$APP_USER/$APP_NAME"
+                # 如果指定的用户是当前用户，使用$HOME，否则使用/home/$USER
+                if [[ "$APP_USER" == "$(whoami)" ]]; then
+                    APP_DIR="$HOME/$APP_NAME"
+                else
+                    APP_DIR="/home/$APP_USER/$APP_NAME"
+                fi
                 shift 2
                 ;;
             --dir)
@@ -188,7 +193,7 @@ show_help() {
     echo "  -e, --email EMAIL      SSL证书邮箱"
     echo "  --repo URL            指定 Git 仓库地址"
     echo "  --branch BRANCH       指定分支 (默认: main)"
-    echo "  --user USER           指定应用用户 (默认: sayit)"
+    echo "  --user USER           指定应用用户 (默认: 当前用户)"
     echo "  --dir PATH            指定应用目录"
     echo "  --no-nginx            跳过 Nginx 安装"
     echo "  --no-ssl              跳过 SSL 证书配置 (默认)"
@@ -262,7 +267,12 @@ interactive_config() {
     read custom_user
     if [[ -n "$custom_user" ]]; then
         APP_USER="$custom_user"
-        APP_DIR="/home/$APP_USER/$APP_NAME"
+        # 如果指定的用户是当前用户，使用$HOME，否则使用/home/$USER
+        if [[ "$APP_USER" == "$(whoami)" ]]; then
+            APP_DIR="$HOME/$APP_NAME"
+        else
+            APP_DIR="/home/$APP_USER/$APP_NAME"
+        fi
     fi
     
     echo -n "自定义安装目录? (留空使用默认: $APP_DIR): "
@@ -359,22 +369,27 @@ install_pm2() {
     print_success "PM2 安装完成"
 }
 
-# 创建应用用户
-create_app_user() {
-    print_header "创建应用用户"
+# 检查应用用户 (不创建新用户，使用当前用户)
+check_app_user() {
+    print_header "检查应用用户"
     
-    if id "$APP_USER" &>/dev/null; then
-        print_success "用户 $APP_USER 已存在"
-        return
+    print_info "当前用户: $APP_USER"
+    print_info "用户ID: $(id -u)"
+    print_info "用户组: $(id -gn)"
+    
+    # 如果需要www-data权限且当前用户不在www-data组中，提示添加
+    if [[ "$INSTALL_NGINX" == "true" ]] && ! id -nG | grep -q "www-data"; then
+        print_warning "建议将当前用户添加到www-data组以获得适当的权限:"
+        print_info "sudo usermod -aG www-data $APP_USER"
+        echo -n "是否立即添加? (y/N): "
+        read add_to_www_data
+        if [[ "$add_to_www_data" =~ ^[Yy]$ ]]; then
+            sudo usermod -aG www-data $APP_USER
+            print_success "已添加到www-data组"
+        fi
     fi
     
-    print_info "创建用户 $APP_USER..."
-    sudo adduser --disabled-password --gecos "" $APP_USER
-    
-    # 添加到必要的用户组
-    sudo usermod -aG www-data $APP_USER
-    
-    print_success "用户 $APP_USER 创建完成"
+    print_success "用户检查完成"
 }
 
 # 部署应用代码
@@ -383,16 +398,14 @@ deploy_application() {
     
     # 创建应用目录
     print_info "创建应用目录..."
-    sudo mkdir -p $APP_DIR
-    sudo chown $APP_USER:$APP_USER $APP_DIR
+    mkdir -p $APP_DIR
     
     # 复制当前目录的代码到目标目录
     print_info "复制应用代码..."
-    sudo -u $APP_USER cp -r $(pwd)/* $APP_DIR/
+    cp -r $(pwd)/* $APP_DIR/
     
     # 设置权限
-    sudo chown -R $APP_USER:$APP_USER $APP_DIR
-    sudo chmod -R 755 $APP_DIR
+    chmod -R 755 $APP_DIR
     
     print_success "应用代码部署完成"
 }
@@ -404,10 +417,10 @@ install_dependencies() {
     cd $APP_DIR
     
     print_info "安装 npm 依赖..."
-    sudo -u $APP_USER npm ci --only=production
+    npm ci --only=production
     
     print_info "构建应用..."
-    sudo -u $APP_USER npm run build
+    npm run build
     
     print_success "应用依赖安装完成"
 }
@@ -471,8 +484,7 @@ LOG_LEVEL=info
 EOF
     
     # 设置文件权限
-    sudo chown $APP_USER:$APP_USER $APP_DIR/.env.local
-    sudo chmod 600 $APP_DIR/.env.local
+    chmod 600 $APP_DIR/.env.local
     
     print_success "环境变量配置完成"
     print_info "JWT密钥已生成并保存到 .env.local 文件"
@@ -485,17 +497,16 @@ setup_database() {
     cd $APP_DIR
     
     print_info "初始化数据库架构..."
-    sudo -u $APP_USER npm run db:push
+    npm run db:push
     
     print_info "生成 Prisma Client..."
-    sudo -u $APP_USER npm run db:generate
+    npm run db:generate
     
     print_info "创建初始数据..."
-    sudo -u $APP_USER npm run db:init
+    npm run db:init
     
     # 设置数据库文件权限
-    sudo chown $APP_USER:$APP_USER $APP_DIR/prisma/production.db
-    sudo chmod 664 $APP_DIR/prisma/production.db
+    chmod 664 $APP_DIR/prisma/production.db
     
     print_success "数据库初始化完成"
 }
@@ -691,7 +702,7 @@ setup_pm2() {
     print_header "配置 PM2"
     
     # 创建 PM2 配置文件
-    sudo -u $APP_USER tee $APP_DIR/ecosystem.config.js > /dev/null << EOF
+    tee $APP_DIR/ecosystem.config.js > /dev/null << EOF
 module.exports = {
   apps: [{
     name: '$APP_NAME',
@@ -717,7 +728,7 @@ module.exports = {
 EOF
     
     # 创建日志目录
-    sudo -u $APP_USER mkdir -p $APP_DIR/logs
+    mkdir -p $APP_DIR/logs
     
     print_success "PM2 配置完成"
 }
@@ -735,12 +746,12 @@ start_services() {
     
     # 启动应用
     print_info "启动应用..."
-    sudo -u $APP_USER pm2 start ecosystem.config.js
+    pm2 start ecosystem.config.js
     
     # 设置开机自启
     print_info "设置开机自启..."
-    sudo -u $APP_USER pm2 startup | grep -o 'sudo.*' | sudo bash
-    sudo -u $APP_USER pm2 save
+    pm2 startup | grep -o 'sudo.*' | sudo bash
+    pm2 save
     
     print_success "服务启动完成"
 }
@@ -750,7 +761,7 @@ create_maintenance_scripts() {
     print_header "创建维护脚本"
     
     # 备份脚本
-    sudo -u $APP_USER tee $APP_DIR/backup.sh > /dev/null << 'EOF'
+    tee $APP_DIR/backup.sh > /dev/null << 'EOF'
 #!/bin/bash
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$HOME/backups"
@@ -761,7 +772,7 @@ echo "数据库备份完成: db_backup_$DATE.db"
 EOF
     
     # 更新脚本
-    sudo -u $APP_USER tee $APP_DIR/update.sh > /dev/null << 'EOF'
+    tee $APP_DIR/update.sh > /dev/null << 'EOF'
 #!/bin/bash
 cd $(dirname "$0")
 echo "开始更新应用..."
@@ -791,11 +802,11 @@ echo "应用更新完成"
 EOF
     
     # 设置执行权限
-    sudo chmod +x $APP_DIR/backup.sh
-    sudo chmod +x $APP_DIR/update.sh
+    chmod +x $APP_DIR/backup.sh
+    chmod +x $APP_DIR/update.sh
     
     # 设置定期备份
-    (sudo -u $APP_USER crontab -l 2>/dev/null; echo "0 2 * * * $APP_DIR/backup.sh") | sudo -u $APP_USER crontab -
+    (crontab -l 2>/dev/null; echo "0 2 * * * $APP_DIR/backup.sh") | crontab -
     
     print_success "维护脚本创建完成"
 }
@@ -873,11 +884,11 @@ show_summary() {
 check_deploy_environment() {
     log_header "部署环境检查"
     
-    # 检查用户
+    # 检查当前用户是否与配置的应用用户一致
     if [[ "$(whoami)" != "$APP_USER" ]]; then
-        log_error "请使用 $APP_USER 用户运行部署命令"
-        log_info "切换用户: sudo -u $APP_USER $0 $*"
-        exit 1
+        log_warning "当前用户 $(whoami) 与配置的应用用户 $APP_USER 不同"
+        log_info "将使用当前用户 $(whoami) 进行部署"
+        APP_USER="$(whoami)"
     fi
     
     # 检查应用目录
@@ -1305,7 +1316,7 @@ install_main() {
     update_system
     install_nodejs
     install_pm2
-    create_app_user
+    check_app_user
     deploy_application
     install_dependencies
     setup_environment
