@@ -46,8 +46,8 @@ export async function GET(
         break
     }
     
-    // 设置缓存头
-    const response = new NextResponse(fileBuffer, {
+    // 设置缓存头 - 将Buffer转换为Uint8Array
+    const response = new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
         'Content-Type': contentType,
