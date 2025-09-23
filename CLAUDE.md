@@ -130,6 +130,7 @@ After running `npm run db:init`, a default admin account is created:
 - Infinite scroll pagination for large content lists
 - Image compression and lazy loading
 - Turbopack for fast development builds
-- 用中文回答
+
+- 用中文回答。
 - 优秀的 Git Commit 标准<type>(<scope>): <subject> —— 使用规范化类型，范围可选，主题用简洁祈使句，必要时补充 body 与 footer。Commit 一律使用英文。
 - 此项目统一使用pnpm管理。

@@ -43,6 +43,7 @@ interface FeedItem {
 interface FeedCardProps {
   item: FeedItem
   layoutMode?: 'masonry' | 'waterfall' | 'list' | 'simple'
+  showContent?: boolean
   onClick?: () => void
   isAboveFold?: boolean
 }
@@ -51,6 +52,7 @@ interface FeedCardProps {
 const FeedCard = memo(function FeedCard({ 
   item, 
   layoutMode = 'masonry', 
+  showContent = true,
   onClick,
   isAboveFold = false
 }: FeedCardProps) {
@@ -229,9 +231,11 @@ const FeedCard = memo(function FeedCard({
             </h3>
           )}
           
-          <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
-            {item.content}
-          </p>
+          {showContent && (
+            <p className="text-gray-700 text-sm leading-relaxed line-clamp-3">
+              {item.content}
+            </p>
+          )}
         </div>
 
         {/* 图片网格 */}

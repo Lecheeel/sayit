@@ -26,11 +26,12 @@ interface UsePageDataOptions {
   sortBy?: string
   limit?: number
   additionalParams?: Record<string, string>
+  // 可选：用于记录浏览量的目标信息（仅在详情页使用）
+  viewTargetId?: string
+  viewTargetType?: 'post' | 'confession' | 'market' | 'task'
 }
 
 interface PageData {
-  loading: boolean
-  error: string | null
   viewRecorded: boolean
 }
 
@@ -42,8 +43,6 @@ export function usePageData<T>(options: UsePageDataOptions) {
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<PageData>({
-    loading: false,
-    error: null,
     viewRecorded: false
   })
 
@@ -122,9 +121,11 @@ export function usePageData<T>(options: UsePageDataOptions) {
   // 记录浏览量
   const trackView = async () => {
     if (data.viewRecorded) return
+    // 只有在提供了明确的目标 ID 和 类型时才记录浏览量
+    if (!options.viewTargetId || !options.viewTargetType) return
 
     try {
-      const result = await recordView(options.endpoint, options.category || 'all')
+      const result = await recordView(options.viewTargetId, options.viewTargetType)
       if (result.success) {
         setData(prev => ({ ...prev, viewRecorded: true }))
       }
@@ -134,7 +135,7 @@ export function usePageData<T>(options: UsePageDataOptions) {
   }
 
   useEffect(() => {
-    if (options.endpoint && options.category) {
+    if (options.viewTargetId && options.viewTargetType) {
       // 延迟记录浏览量，确保用户真的在查看内容
       const timer = setTimeout(() => {
         trackView()
@@ -142,7 +143,7 @@ export function usePageData<T>(options: UsePageDataOptions) {
 
       return () => clearTimeout(timer)
     }
-  }, [options.endpoint, options.category])
+  }, [options.viewTargetId, options.viewTargetType])
 
   return {
     items,

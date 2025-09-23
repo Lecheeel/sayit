@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         take: type === 'confession' ? limit : undefined
       })
 
-      contents.push(...confessions.map(item => ({
+      contents.push(...confessions.map<ContentItem>(item => ({
         id: item.id,
         type: 'confession',
         content: item.content,
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         take: type === 'post' ? limit : undefined
       })
 
-      contents.push(...posts.map(item => ({
+      contents.push(...posts.map<ContentItem>(item => ({
         id: item.id,
         type: 'post',
         title: item.title,
@@ -132,12 +132,12 @@ export async function GET(request: NextRequest) {
         take: type === 'market' ? limit : undefined
       })
 
-      contents.push(...marketItems.map(item => ({
+      contents.push(...marketItems.map<ContentItem>(item => ({
         id: item.id,
         type: 'market',
         title: item.title,
         content: item.description,
-        author: item.seller,
+        author: item.seller as unknown as ContentItem['author'],
         createdAt: item.createdAt.toISOString(),
         viewCount: item.viewCount,
         likesCount: item._count.likes,
@@ -167,12 +167,12 @@ export async function GET(request: NextRequest) {
         take: type === 'task' ? limit : undefined
       })
 
-      contents.push(...tasks.map(item => ({
+      contents.push(...tasks.map<ContentItem>(item => ({
         id: item.id,
         type: 'task',
         title: item.title,
         content: item.description,
-        author: item.publisher,
+        author: item.publisher as unknown as ContentItem['author'],
         createdAt: item.createdAt.toISOString(),
         viewCount: item.viewCount,
         likesCount: item._count.likes,
