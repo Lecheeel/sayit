@@ -425,7 +425,12 @@ install_dependencies() {
     cd $APP_DIR
     
     print_info "安装 npm 依赖..."
-    npm ci --only=production
+    # 尝试使用 npm ci，如果失败则更新 lock 文件
+    if ! npm ci --omit=dev; then
+        print_warning "package-lock.json 与 package.json 不同步，正在更新..."
+        rm -f package-lock.json
+        npm install --only=production
+    fi
     
     print_info "构建应用..."
     npm run build
@@ -1026,10 +1031,15 @@ deploy_install_dependencies() {
     cd "$APP_DIR"
     
     log_info "清理 node_modules..."
-    rm -rf node_modules package-lock.json 2>/dev/null || true
+    rm -rf node_modules 2>/dev/null || true
     
     log_info "安装生产依赖..."
-    npm ci --only=production
+    # 尝试使用 npm ci，如果失败则更新 lock 文件
+    if ! npm ci --omit=dev; then
+        log_warning "package-lock.json 与 package.json 不同步，正在更新..."
+        rm -f package-lock.json
+        npm install --only=production
+    fi
     
     log_success "依赖安装完成"
 }
@@ -1268,7 +1278,12 @@ quick_update() {
     }
     
     log_info "安装依赖..."
-    npm ci --only=production
+    # 尝试使用 npm ci，如果失败则更新 lock 文件
+    if ! npm ci --omit=dev; then
+        log_warning "package-lock.json 与 package.json 不同步，正在更新..."
+        rm -f package-lock.json
+        npm install --only=production
+    fi
     
     log_info "构建应用..."
     npm run build
