@@ -100,9 +100,9 @@ HCAPTCHA_SECRET_KEY=secret               # Optional: hCaptcha verification
 ```
 
 ### Default Admin Account
-After running `npm run db:init`, a default admin account is created:
+After running `npm run db:init`, a default admin account is created with a strong random password:
 - Username: `admin`
-- Password: `admin123`
+- Password: generated randomly (printed in init logs and saved to `admin_credentials.txt` when run via install script)
 
 ### Authentication Flow
 1. Login creates JWT access token (7-day expiry) + refresh token

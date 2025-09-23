@@ -556,7 +556,17 @@ setup_database() {
     pnpm run db:generate
 
     print_info "创建初始数据和管理员账户..."
-    pnpm run db:init
+    # 指定管理员凭据输出文件，供初始化脚本写入
+    local admin_creds_file="$APP_DIR/admin_credentials.txt"
+    # 先删除旧文件，避免误读
+    rm -f "$admin_creds_file" 2>/dev/null || true
+    ADMIN_PASSWORD_FILE="$admin_creds_file" pnpm run db:init
+
+    # 如果凭据文件已生成，设置安全权限
+    if [[ -f "$admin_creds_file" ]]; then
+        chmod 600 "$admin_creds_file"
+        print_success "管理员凭据已保存: $admin_creds_file"
+    fi
 
     # 设置数据库文件权限
     if [[ -f "$db_file" ]]; then
@@ -926,9 +936,19 @@ show_summary() {
     fi
     echo ""
     echo -e "${WHITE}默认管理员账户:${NC}"
-    echo -e "  用户名: ${YELLOW}admin${NC}"
-    echo -e "  密码: ${YELLOW}admin123${NC}"
-    echo -e "  ${RED}⚠️  请立即登录并修改默认密码！${NC}"
+    local admin_creds_file="$APP_DIR/admin_credentials.txt"
+    if [[ -f "$admin_creds_file" ]]; then
+        local admin_user=$(grep '^username=' "$admin_creds_file" | cut -d'=' -f2-)
+        local admin_pass=$(grep '^password=' "$admin_creds_file" | cut -d'=' -f2-)
+        echo -e "  用户名: ${YELLOW}${admin_user:-admin}${NC}"
+        echo -e "  密码: ${YELLOW}${admin_pass}${NC}"
+        echo -e "  凭据文件: ${CYAN}$admin_creds_file${NC} (已设置权限 600)"
+        echo -e "  ${RED}⚠️  请妥善保存并尽快在系统中修改密码！${NC}"
+    else
+        echo -e "  用户名: ${YELLOW}admin${NC}"
+        echo -e "  密码: ${YELLOW}[已随机生成，请查看安装日志或重置密码]${NC}"
+        echo -e "  ${YELLOW}提示:${NC} 如需重新生成，可删除管理员并重新运行初始化脚本。"
+    fi
     echo ""
     echo -e "${WHITE}常用命令:${NC}"
     echo -e "  查看服务状态: ${CYAN}sudo -u $APP_USER pm2 status${NC}"
