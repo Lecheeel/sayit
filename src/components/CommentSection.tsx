@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MessageCircle, Send, User, MoreHorizontal, Image as ImageIcon, ThumbsUp, Clock } from 'lucide-react'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 import LikeButton from './LikeButton'
 import CommentImageUpload from './CommentImageUpload'
 import CommentImageGallery from './CommentImageGallery'
@@ -54,7 +54,7 @@ export default function CommentSection({
   targetType,
   initialCommentCount = 0
 }: CommentSectionProps) {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user } = useAuthContext()
   const { toast, showToast, hideToast } = useToast()
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')

@@ -3,9 +3,30 @@ import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { authenticateRequest, getClientIP, logSecurityEvent } from '@/lib/auth'
 
-// 支持的图片格式
+// 支持的图片格式和MIME类型
 const ALLOWED_TYPES = ['jpg', 'jpeg', 'png', 'webp']
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || '5242880') // 默认5MB
+
+// 验证文件是否为真实的图片文件
+function validateImageFile(buffer: Buffer, mimeType: string): boolean {
+  // 检查文件头标识符
+  const fileSignatures = {
+    'image/jpeg': [0xFF, 0xD8, 0xFF],
+    'image/png': [0x89, 0x50, 0x4E, 0x47],
+    'image/webp': [0x52, 0x49, 0x46, 0x46] // RIFF
+  }
+  
+  const signature = fileSignatures[mimeType as keyof typeof fileSignatures]
+  if (!signature) return false
+  
+  // 检查文件头是否匹配
+  for (let i = 0; i < signature.length; i++) {
+    if (buffer[i] !== signature[i]) return false
+  }
+  
+  return true
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,9 +76,10 @@ export async function POST(request: NextRequest) {
     }
 
     for (const file of files) {
-      // 验证文件类型
+      // 验证文件类型和MIME类型
       const fileName = file.name.toLowerCase()
       const fileExtension = fileName.split('.').pop()
+      const mimeType = file.type
       
       console.log('上传文件详情:', {
         name: file.name,
@@ -66,6 +88,7 @@ export async function POST(request: NextRequest) {
         extension: fileExtension
       })
       
+      // 验证扩展名
       if (!fileExtension || !ALLOWED_TYPES.includes(fileExtension)) {
         logSecurityEvent('INVALID_FILE_TYPE', { 
           userId: user.userId,
@@ -74,6 +97,19 @@ export async function POST(request: NextRequest) {
         }, clientIP)
         return NextResponse.json(
           { success: false, message: `不支持的文件格式。支持格式：${ALLOWED_TYPES.join(', ')}` },
+          { status: 400 }
+        )
+      }
+      
+      // 验证MIME类型
+      if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+        logSecurityEvent('INVALID_MIME_TYPE', { 
+          userId: user.userId,
+          fileName: file.name,
+          mimeType: mimeType 
+        }, clientIP)
+        return NextResponse.json(
+          { success: false, message: '文件类型不匹配，可能存在安全风险' },
           { status: 400 }
         )
       }
@@ -91,14 +127,27 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // 转换文件为Buffer并验证内容
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+      
+      // 验证文件内容是否为真实图片
+      if (!validateImageFile(buffer, mimeType)) {
+        logSecurityEvent('INVALID_FILE_CONTENT', { 
+          userId: user.userId,
+          fileName: file.name,
+          mimeType: mimeType 
+        }, clientIP)
+        return NextResponse.json(
+          { success: false, message: '文件内容验证失败，可能不是有效的图片文件' },
+          { status: 400 }
+        )
+      }
+
       // 生成唯一文件名
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const uniqueFileName = `${timestamp}_${randomString}.${fileExtension}`
-      
-      // 转换文件为Buffer并保存
-      const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
       
       const filePath = join(uploadDir, uniqueFileName)
       await writeFile(filePath, buffer)

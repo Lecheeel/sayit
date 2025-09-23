@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { LogOut, Home, Menu, X, ChevronDown, ChevronUp, Search } from 'lucide-react'
-import { useAuth } from '@/lib/useAuth'
+import { LogOut, Home, Menu, X, ChevronDown, ChevronUp, Search, Settings } from 'lucide-react'
+import { useAuthContext } from '@/lib/auth-context'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuthContext()
   const router = useRouter()
   const [isExpanded, setIsExpanded] = useState(true) // 默认展开
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -195,6 +195,17 @@ export default function Navbar() {
                       {user.nickname || user.username}
                     </span>
                   </span>
+                  {/* 管理员后台链接 */}
+                  {user.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 px-3 py-2 rounded-md text-sm font-medium transition hover:bg-purple-50"
+                      title="管理后台"
+                    >
+                      <Settings size={16} />
+                      <span className="hidden lg:inline">管理</span>
+                    </Link>
+                  )}
                   <button
                     onClick={logout}
                     className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition"
@@ -301,6 +312,20 @@ export default function Navbar() {
                 >
                   <span className="text-base">悬赏任务</span>
                 </Link>
+                
+                {/* 管理员后台链接 - 移动端 */}
+                {user && user.role === 'ADMIN' && (
+                  <Link 
+                    href="/admin" 
+                    className="block text-purple-600 hover:text-purple-700 py-3 px-3 rounded-lg hover:bg-purple-50 transition-all"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Settings size={18} className="mr-3" />
+                      <span className="text-base">管理后台</span>
+                    </div>
+                  </Link>
+                )}
               </div>
 
               {/* 移动端用户菜单 */}

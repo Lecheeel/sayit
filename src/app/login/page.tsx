@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Toast, { useToast } from '@/components/Toast'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 
 // hCaptcha 组件声明
 declare global {
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [hcaptchaTokenId, setHcaptchaTokenId] = useState<string | null>(null)
   const hcaptchaRef = useRef<any>(null)
   const { toast, showToast, hideToast } = useToast()
-  const { updateUser } = useAuth()
+  const { updateUser } = useAuthContext()
   
   const [formData, setFormData] = useState({
     username: '',

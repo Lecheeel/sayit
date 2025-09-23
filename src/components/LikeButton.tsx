@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 import Toast, { useToast } from './Toast'
 
 interface LikeButtonProps {
@@ -24,7 +24,7 @@ export default function LikeButton({
   size = 'md',
   showCount = true
 }: LikeButtonProps) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuthContext()
   const [isLiked, setIsLiked] = useState(initialIsLiked)
   const [likeCount, setLikeCount] = useState(initialLikeCount)
   const [loading, setLoading] = useState(false)

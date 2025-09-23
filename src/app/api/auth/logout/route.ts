@@ -33,13 +33,22 @@ export async function POST(request: NextRequest) {
       message: '退出登录成功'
     })
 
-    // 清除 Cookie
+    // 清除访问token Cookie
     response.cookies.set('auth-token', '', {
       httpOnly: true,
-      secure: false, // 在HTTP环境下设为false
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 0, // 立即过期
-      path: '/' // 确保在所有路径下都清除
+      path: '/'
+    })
+    
+    // 清除刷新token Cookie
+    response.cookies.set('refresh-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0, // 立即过期
+      path: '/'
     })
 
     return response

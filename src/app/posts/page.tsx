@@ -8,7 +8,7 @@ import Toast, { useToast } from '@/components/Toast'
 import CreatePostDialog from '@/components/CreatePostDialog'
 import FeedList, { FeedItem } from '@/components/FeedList'
 import { useInfiniteScroll } from '@/lib/useInfiniteScroll'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 
 interface User {
   id: string
@@ -38,7 +38,7 @@ function PostsPageContent() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const { user, loading: authLoading, isAuthenticated } = useAuth()
+  const { user, loading: authLoading, isAuthenticated } = useAuthContext()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)

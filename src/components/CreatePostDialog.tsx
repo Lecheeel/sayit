@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 import Toast, { useToast } from '@/components/Toast'
 import ImageUpload from '@/components/ImageUpload'
 
@@ -117,7 +117,7 @@ const categories = {
 }
 
 export default function CreatePostDialog({ isOpen, onClose, onSuccess, type }: CreatePostDialogProps) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuthContext()
   const { toast, showToast, hideToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({

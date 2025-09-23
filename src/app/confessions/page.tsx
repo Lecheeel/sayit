@@ -8,7 +8,7 @@ import Toast, { useToast } from '@/components/Toast'
 import CreatePostDialog from '@/components/CreatePostDialog'
 import FeedList, { FeedItem } from '@/components/FeedList'
 import InfiniteScrollContainer from '@/components/InfiniteScrollContainer'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 
 interface User {
   id: string
@@ -39,7 +39,7 @@ function ConfessionsPageContent() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuthContext()
   const { toast, showToast, hideToast } = useToast()
 
   // 检查是否需要自动打开创建对话框

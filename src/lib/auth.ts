@@ -16,14 +16,20 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 
 // JWT Token 生成
 export function generateToken(payload: any): string {
-  const secret = process.env.JWT_SECRET || 'your-secret-key'
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error('JWT_SECRET环境变量未设置，请配置安全的密钥')
+  }
   return jwt.sign(payload, secret, { expiresIn: '7d' })
 }
 
 // JWT Token 验证 (使用缓存优化)
 export function verifyToken(token: string): any {
   try {
-    const secret = process.env.JWT_SECRET || 'your-secret-key'
+    const secret = process.env.JWT_SECRET
+    if (!secret) {
+      throw new Error('JWT_SECRET环境变量未设置，请配置安全的密钥')
+    }
     console.log('JWT验证 - 使用的Secret:', secret === 'your-secret-key' ? '默认密钥' : '自定义密钥')
     
     const payload = jwt.verify(token, secret)

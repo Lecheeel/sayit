@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyPassword, generateToken, sanitizeInput, getClientIP, logSecurityEvent } from '@/lib/auth'
+import { verifyPassword, sanitizeInput, getClientIP, logSecurityEvent } from '@/lib/auth'
+import { createUserSession, generateDeviceFingerprint } from '@/lib/auth-security'
 import { verifyAndUseHCaptchaToken } from '@/lib/captcha'
 
 export async function POST(request: NextRequest) {
@@ -71,12 +72,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 生成 JWT Token
-    const token = generateToken({
-      userId: user.id,
-      username: user.username,
-      role: user.role
-    })
+    // 生成设备ID和创建安全会话
+    const deviceId = generateDeviceFingerprint(request).substring(0, 16) // 使用指纹前16位作为设备ID
+    const session = await createUserSession(user.id, deviceId, request)
 
     // 准备用户数据（排除密码）
     const userData = {
@@ -89,31 +87,40 @@ export async function POST(request: NextRequest) {
     }
 
     // 记录成功登录
-    logSecurityEvent('USER_LOGIN_SUCCESS', { username: cleanUsername, userId: user.id }, clientIP)
+    logSecurityEvent('USER_LOGIN_SUCCESS', { 
+      username: cleanUsername, 
+      userId: user.id,
+      deviceId,
+      fingerprint: generateDeviceFingerprint(request).substring(0, 16) + '...'
+    }, clientIP)
 
-    // 设置 HTTP-only Cookie
+    // 设置安全响应
     const response = NextResponse.json({
       success: true,
       message: '登录成功',
       data: {
         user: userData,
-        token
+        sessionId: session.sessionId
       }
     })
 
-    // 设置 Cookie
-    const cookieOptions = {
+    // 设置访问token cookie (2小时)
+    response.cookies.set('auth-token', session.accessToken, {
       httpOnly: true,
-      secure: false, // 在HTTP环境下设为false
-      sameSite: 'lax' as const, // 改为lax以便跨页面导航
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 2 * 60 * 60, // 2小时
+      path: '/'
+    })
+    
+    // 设置刷新token cookie (7天)
+    response.cookies.set('refresh-token', session.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7天
-      path: '/' // 确保cookie在所有路径下都可用
-    }
-    
-    // console.log('设置Cookie选项:', cookieOptions)
-    // console.log('Token前8位:', token.substring(0, 8) + '...')
-    
-    response.cookies.set('auth-token', token, cookieOptions)
+      path: '/'
+    })
 
     return response
 

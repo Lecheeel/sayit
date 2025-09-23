@@ -7,7 +7,7 @@ import Toast, { useToast } from '@/components/Toast'
 
 import CreatePostDialog from '@/components/CreatePostDialog'
 import FeedList, { FeedItem } from '@/components/FeedList'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 
 interface User {
   id: string
@@ -39,7 +39,7 @@ function TasksPageContent() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const { user, loading: authLoading, isAuthenticated } = useAuth()
+  const { user, loading: authLoading, isAuthenticated } = useAuthContext()
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const { toast, showToast, hideToast } = useToast()
 

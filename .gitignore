@@ -199,3 +199,5 @@ $RECYCLE.BIN/
 # Cursor
 .cursor
 .cursor/
+
+example.env.example

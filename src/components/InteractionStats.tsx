@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Heart, MessageCircle, Eye, Share2 } from 'lucide-react'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 import Toast, { useToast } from './Toast'
 
 interface InteractionStatsProps {
@@ -39,7 +39,7 @@ export default function InteractionStats({
   variant = 'horizontal',
   onStatsChange
 }: InteractionStatsProps) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuthContext()
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState(initialStats)
   const { toast, showToast, hideToast } = useToast()

@@ -7,7 +7,7 @@ import Toast, { useToast } from './Toast'
 import CreatePostDialog from './CreatePostDialog'
 import FeedList, { FeedItem } from './FeedList'
 import InfiniteScrollContainer from './InfiniteScrollContainer'
-import { useAuth } from '@/lib/useAuth'
+import { useAuthContext } from '@/lib/auth-context'
 
 // 分类配置接口
 interface CategoryConfig {
@@ -59,7 +59,7 @@ export default function PageLayout({
   const router = useRouter()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuthContext()
   const { toast, showToast, hideToast } = useToast()
 
   // 使用传入的数据钩子

@@ -33,6 +33,10 @@ model User {
   acceptedTasks    Task[]            @relation("AcceptedTasks")
   publishedTasks   Task[]            @relation("PublishedTasks")
 
+  @@index([createdAt])
+  @@index([role])
+  @@index([isVerified])
+  @@index([deletedAt])
   @@map("users")
 }
 
@@ -71,6 +75,11 @@ model Post {
   author      User         @relation(fields: [authorId], references: [id])
   viewRecords ViewRecord[]
 
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([category])
+  @@index([deletedAt])
+  @@index([viewCount])
   @@map("posts")
 }
 
