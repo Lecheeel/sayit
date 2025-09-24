@@ -893,9 +893,6 @@ EOF
     chmod +x $APP_DIR/backup.sh
     chmod +x $APP_DIR/update.sh
     
-    # 设置定期备份
-    (crontab -l 2>/dev/null; echo "0 2 * * * $APP_DIR/backup.sh") | crontab -
-    
     print_success "维护脚本创建完成"
 }
 
