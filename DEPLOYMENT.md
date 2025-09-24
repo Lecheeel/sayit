@@ -81,7 +81,7 @@ su - sayit
 ### 2. 克隆项目代码
 ```bash
 # 克隆项目到服务器
-git clone https://github.com/your-username/sayit.git
+git clone https://github.com/Lecheeel/sayit.git
 cd sayit
 
 # 或者从本地上传代码包

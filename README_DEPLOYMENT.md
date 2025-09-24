@@ -23,7 +23,7 @@ sayit/
 
 ```bash
 # 下载项目到服务器
-git clone https://github.com/your-username/sayit.git
+git clone https://github.com/Lecheeel/sayit.git
 cd sayit
 
 # 给安装脚本执行权限
@@ -57,7 +57,7 @@ sudo usermod -aG www-data sayit
 
 # 5. 切换到应用用户并部署
 sudo su - sayit
-git clone https://github.com/your-username/sayit.git
+git clone https://github.com/Lecheeel/sayit.git
 cd sayit
 
 # 6. 安装依赖和构建

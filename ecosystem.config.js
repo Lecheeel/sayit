@@ -103,7 +103,7 @@ module.exports = {
       user: 'sayit',
       host: 'your-server.com',
       ref: 'origin/main',
-      repo: 'https://github.com/your-username/sayit.git',
+      repo: 'https://github.com/Lecheeel/sayit.git',
       path: '/home/sayit/sayit',
       'pre-deploy-local': '',
       'post-deploy': 'npm ci --only=production && npm run build && pm2 reload ecosystem.config.js --env production',

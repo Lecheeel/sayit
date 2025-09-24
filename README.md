@@ -43,7 +43,7 @@ npm >= 9.0.0
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/sayit.git
+git clone https://github.com/Lecheeel/sayit.git
 cd sayit
 
 # 2. 一键安装与初始化
