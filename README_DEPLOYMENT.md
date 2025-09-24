@@ -241,7 +241,7 @@ htop
 df -h
 free -h
 
-# 网络连接
+# 网络连接（将 3000 替换为你的应用端口）
 netstat -tulpn | grep :3000
 ss -tulpn | grep :80
 
@@ -258,7 +258,7 @@ systemctl status pm2-sayit
 # 检查日志
 pm2 logs sayit
 
-# 检查端口占用
+# 检查端口占用（将 3000 替换为你的应用端口）
 sudo netstat -tulpn | grep :3000
 
 # 重启服务

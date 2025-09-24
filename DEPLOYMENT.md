@@ -243,6 +243,7 @@ server {
 
     # 主应用代理
     location / {
+        # 修改为你的应用端口（默认 3000，若安装时使用了 --port 则对应修改）
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -296,6 +297,7 @@ module.exports = {
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
+      # 使用环境变量 PORT 或 .env.local 中的 PORT，未设置时回退到 3000
       PORT: 3000
     },
     error_file: './logs/err.log',
@@ -391,7 +393,7 @@ crontab -e
 
 ### 1. 应用无法启动
 ```bash
-# 检查端口占用
+# 检查端口占用（替换 3000 为你的应用端口）
 sudo netstat -tlnp | grep :3000
 
 # 检查应用日志

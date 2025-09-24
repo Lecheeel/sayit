@@ -1,4 +1,25 @@
 // PM2 配置文件 - SayIt 校园社交平台
+// 动态读取端口：优先使用进程环境变量 PORT，其次读取项目根目录下 .env.local 的 PORT，最后回退到 3000
+const fs = require('fs');
+const path = require('path');
+let APP_PORT = parseInt(process.env.PORT || '', 10);
+if (!APP_PORT || APP_PORT < 1 || APP_PORT > 65535) {
+  try {
+    const envPath = path.join(__dirname, '.env.local');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf-8');
+      const match = content.match(/^PORT=(\d{1,5})/m);
+      if (match) {
+        const maybe = parseInt(match[1], 10);
+        if (maybe >= 1 && maybe <= 65535) APP_PORT = maybe;
+      }
+    }
+  } catch (e) {
+    // 忽略读取错误，使用默认端口
+  }
+}
+if (!APP_PORT) APP_PORT = 3000;
+
 module.exports = {
   apps: [
     {
@@ -15,7 +36,7 @@ module.exports = {
       // 环境变量
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: APP_PORT
       },
       
       // 日志配置
@@ -63,7 +84,7 @@ module.exports = {
       // 多环境配置
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: APP_PORT
       },
       
       env_staging: {

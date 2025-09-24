@@ -20,6 +20,17 @@ APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_NAME="sayit"
 LOG_DIR="$APP_DIR/logs"
 
+# 解析端口：优先环境变量 PORT，其次 .env.local 的 PORT，最后默认 3000
+APP_PORT=${PORT:-}
+if [[ -z "$APP_PORT" ]]; then
+    if [[ -f "$APP_DIR/.env.local" ]]; then
+        APP_PORT=$(grep -E '^PORT=' "$APP_DIR/.env.local" | head -n1 | cut -d'=' -f2)
+    fi
+fi
+if [[ -z "$APP_PORT" || ! "$APP_PORT" =~ ^[0-9]+$ || "$APP_PORT" -lt 1 || "$APP_PORT" -gt 65535 ]]; then
+    APP_PORT=3000
+fi
+
 # 日志函数
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $(date '+%Y-%m-%d %H:%M:%S') - $1"
@@ -90,7 +101,7 @@ check_app_status() {
     
     # 检查端口监听
     log_info "检查端口监听状态..."
-    netstat -tlnp | grep -E ":3000|:80|:443" || log_warning "未发现监听端口"
+    netstat -tlnp | grep -E ":$APP_PORT|:80|:443" || log_warning "未发现监听端口"
     
     # 检查数据库
     log_info "检查数据库状态..."
@@ -103,7 +114,7 @@ check_app_status() {
     
     # 检查应用响应
     log_info "检查应用响应..."
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 | grep -q "200"; then
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:$APP_PORT | grep -q "200"; then
         log_success "应用响应正常"
     else
         log_warning "应用响应异常"

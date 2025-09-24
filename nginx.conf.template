@@ -70,8 +70,9 @@ server {
     }
     
     # API 路由代理
+    # 如已使用 install.sh 设置了自定义端口，请将以下 3000 替换为实际端口（例如 8080）
     location /api/ {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3000; # ← 替换为你的应用端口
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -88,8 +89,9 @@ server {
     }
     
     # 主应用代理
+    # 如已使用 install.sh 设置了自定义端口，请将以下 3000 替换为实际端口
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3000; # ← 替换为你的应用端口
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

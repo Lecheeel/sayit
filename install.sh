@@ -25,7 +25,7 @@ BRANCH="main"
 DOMAIN=""
 EMAIL=""
 NODE_VERSION="18"
-INSTALL_NGINX="true"
+INSTALL_NGINX="false"
 INSTALL_SSL="false"  # 默认跳过SSL
 AUTO_START="true"
 ACTION="install"
@@ -33,6 +33,7 @@ FORCE_DEPLOY="false"
 BACKUP_BEFORE_DEPLOY="true"
 AUTO_MIGRATION="true"
 RESTART_SERVICES="true"
+APP_PORT="3000"
 
 # 日志函数（兼容部署功能）
 log_info() {
@@ -123,8 +124,16 @@ parse_arguments() {
                 APP_DIR="$2"
                 shift 2
                 ;;
+            --port)
+                APP_PORT="$2"
+                shift 2
+                ;;
             --no-nginx)
                 INSTALL_NGINX="false"
+                shift
+                ;;
+            --nginx)
+                INSTALL_NGINX="true"
                 shift
                 ;;
             --no-ssl)
@@ -195,7 +204,9 @@ show_help() {
     echo "  --branch BRANCH       指定分支 (默认: main)"
     echo "  --user USER           指定应用用户 (默认: 当前用户)"
     echo "  --dir PATH            指定应用目录"
+    echo "  --nginx               安装 Nginx (默认不安装)"
     echo "  --no-nginx            跳过 Nginx 安装"
+    echo "  --port PORT           设置应用端口 (默认: 3000)"
     echo "  --no-ssl              跳过 SSL 证书配置 (默认)"
     echo "  --no-autostart        不自动启动服务"
     echo ""
@@ -254,10 +265,21 @@ interactive_config() {
     
     # Web服务配置
     echo -e "${WHITE}3. Web服务配置${NC}"
-    echo -n "是否安装 Nginx? (Y/n，默认安装): "
+    echo -n "是否安装 Nginx? (y/N，默认不安装): "
     read nginx_choice
-    if [[ "$nginx_choice" =~ ^[Nn]$ ]]; then
-        INSTALL_NGINX="false"
+    if [[ "$nginx_choice" =~ ^[Yy]$ ]]; then
+        INSTALL_NGINX="true"
+    fi
+    echo ""
+
+    echo -n "设置应用端口 (留空使用默认: $APP_PORT): "
+    read custom_port
+    if [[ -n "$custom_port" ]]; then
+        if [[ "$custom_port" =~ ^[0-9]+$ ]] && [[ "$custom_port" -ge 1 && "$custom_port" -le 65535 ]]; then
+            APP_PORT="$custom_port"
+        else
+            print_warning "端口无效，使用默认端口 $APP_PORT"
+        fi
     fi
     echo ""
     
@@ -293,6 +315,7 @@ interactive_config() {
     print_info "  应用用户: $APP_USER"
     print_info "  安装目录: $APP_DIR"
     print_info "  域名: ${DOMAIN:-"未配置 (本地访问)"}"
+    print_info "  应用端口: $APP_PORT"
     print_info "  安装Nginx: $INSTALL_NGINX"
     print_info "  配置SSL: $INSTALL_SSL"
     print_info "  自动启动: $AUTO_START"
@@ -512,7 +535,7 @@ UPLOAD_PATH=$APP_DIR/public/uploads
 MAX_FILE_SIZE=10485760
 
 # 应用端口
-PORT=3000
+PORT=$APP_PORT
 
 # 日志级别
 LOG_LEVEL=info
@@ -683,7 +706,7 @@ server {
 
     # 应用代理
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:$APP_PORT;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -729,7 +752,7 @@ server {
 
     # 应用代理
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:$APP_PORT;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -761,7 +784,7 @@ EOF
 
 # 安装 SSL 证书
 setup_ssl() {
-    if [[ "$INSTALL_SSL" != "true" || -z "$DOMAIN" || -z "$EMAIL" ]]; then
+    if [[ "$INSTALL_SSL" != "true" || -z "$DOMAIN" || -z "$EMAIL" || "$INSTALL_NGINX" != "true" ]]; then
         print_info "跳过 SSL 证书配置"
         return
     fi
@@ -801,7 +824,7 @@ module.exports = {
     exec_mode: 'cluster',
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: $APP_PORT
     },
     error_file: './logs/err.log',
     out_file: './logs/out.log',
@@ -909,8 +932,8 @@ show_summary() {
         echo -e "  网站地址: ${CYAN}https://$DOMAIN${NC}"
         echo -e "  HTTP重定向: ${CYAN}http://$DOMAIN${NC}"
     else
-        echo -e "  本地访问: ${CYAN}http://localhost:3000${NC}"
-        echo -e "  服务器访问: ${CYAN}http://[服务器IP]${NC}"
+        echo -e "  本地访问: ${CYAN}http://localhost:$APP_PORT${NC}"
+        echo -e "  服务器访问: ${CYAN}http://[服务器IP]:$APP_PORT${NC}"
     fi
     echo ""
     echo -e "${WHITE}默认管理员账户:${NC}"
@@ -973,6 +996,15 @@ check_deploy_environment() {
         log_info "请先运行 install 安装应用"
         exit 1
     fi
+
+    # 若存在 .env.local，则读取其中的端口覆盖 APP_PORT
+    if [[ -f "$APP_DIR/.env.local" ]]; then
+        local env_port=$(grep -E '^PORT=' "$APP_DIR/.env.local" | head -n1 | cut -d'=' -f2)
+        if [[ -n "$env_port" ]] && [[ "$env_port" =~ ^[0-9]+$ ]] && [[ "$env_port" -ge 1 && "$env_port" -le 65535 ]]; then
+            APP_PORT="$env_port"
+            log_info "检测到已有端口配置: PORT=$APP_PORT"
+        fi
+    fi
     
     # 检查必要工具
     for cmd in git node pnpm pm2; do
@@ -1005,7 +1037,7 @@ check_deploy_status() {
     pm2 status | grep -E "(App name|$APP_NAME)" || true
     
     # 应用响应检查
-    if curl -s -f http://localhost:3000/health &> /dev/null; then
+    if curl -s -f http://localhost:$APP_PORT/health &> /dev/null; then
         log_success "应用响应正常"
     else
         log_warning "应用响应异常"
@@ -1184,7 +1216,7 @@ restart_services() {
     
     local retry_count=0
     while [[ $retry_count -lt 30 ]]; do
-        if curl -s -f http://localhost:3000/health &> /dev/null; then
+        if curl -s -f http://localhost:$APP_PORT/health &> /dev/null; then
             log_success "应用启动成功"
             break
         fi
@@ -1214,7 +1246,7 @@ verify_deployment() {
     
     # 检查应用响应
     log_info "检查应用响应..."
-    local response=$(curl -s -w "%{http_code}" http://localhost:3000)
+    local response=$(curl -s -w "%{http_code}" http://localhost:$APP_PORT)
     local status_code="${response: -3}"
     
     if [[ "$status_code" == "200" ]]; then
