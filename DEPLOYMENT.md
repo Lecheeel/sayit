@@ -491,19 +491,8 @@ sudo systemctl restart ssh
 ### 2. 应用安全
 - 定期更新依赖包 `npm audit fix`
 - 使用强密码和 JWT 密钥
-- 启用防火墙限制端口访问
 - 定期备份数据库和代码
 - 监控应用日志异常访问
-
-### 3. 防火墙配置
-```bash
-# 使用 ufw 配置防火墙
-sudo ufw allow 22/tcp    # SSH
-sudo ufw allow 80/tcp    # HTTP
-sudo ufw allow 443/tcp   # HTTPS
-sudo ufw allow 2222/tcp  # 自定义 SSH 端口
-sudo ufw --force enable
-```
 
 ## 🎯 性能优化
 

@@ -279,12 +279,6 @@ security_check() {
         fi
     fi
     
-    # 检查防火墙状态
-    log_info "检查防火墙状态..."
-    if command -v ufw &> /dev/null; then
-        sudo ufw status || log_warning "防火墙状态检查失败"
-    fi
-    
     # 检查文件权限
     log_info "检查关键文件权限..."
     ls -la "$APP_DIR/.env.local" 2>/dev/null || log_warning "环境配置文件不存在"
@@ -321,7 +315,7 @@ $(ls -la "$APP_DIR/prisma/production.db" 2>/dev/null || echo "数据库文件不
 $(du -sh "$LOG_DIR" 2>/dev/null || echo "日志目录不存在")
 
 安全状态:
-$(sudo ufw status 2>/dev/null || echo "防火墙状态未知")
+防火墙检查已跳过
 
 ===================================
 维护建议:

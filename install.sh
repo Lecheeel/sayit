@@ -899,26 +899,7 @@ EOF
     print_success "维护脚本创建完成"
 }
 
-# 配置防火墙
-setup_firewall() {
-    print_header "配置防火墙"
-    
-    if ! command -v ufw &> /dev/null; then
-        print_info "安装 UFW 防火墙..."
-        sudo apt install -y ufw
-    fi
-    
-    # 配置防火墙规则
-    sudo ufw --force reset
-    sudo ufw default deny incoming
-    sudo ufw default allow outgoing
-    sudo ufw allow 22/tcp    # SSH
-    sudo ufw allow 80/tcp    # HTTP
-    sudo ufw allow 443/tcp   # HTTPS
-    sudo ufw --force enable
-    
-    print_success "防火墙配置完成"
-}
+
 
 # 显示安装总结
 show_summary() {
@@ -1469,7 +1450,6 @@ install_main() {
     setup_pm2
     start_services
     create_maintenance_scripts
-    setup_firewall
     
     # 显示安装总结
     show_summary
